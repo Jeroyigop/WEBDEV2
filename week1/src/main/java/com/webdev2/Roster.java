@@ -28,7 +28,7 @@ public class Roster {
                 .map(Student::getName)
                 .collect(Collectors.toList());
 
-        System.out.println("=== Adult Student Report (age >= 18) ===");
+        System.out.println("=== Adult Student Report  (age >= 18) ===");
         adultNames.forEach(name -> System.out.println(" - " + name));
         System.out.println("Total qualifying students: " + adultNames.size());
 

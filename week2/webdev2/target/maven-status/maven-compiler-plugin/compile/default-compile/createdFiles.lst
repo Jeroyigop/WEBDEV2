@@ -1,6 +1,0 @@
-com\example\webdev2\service\ProductService.class
-com\example\webdev2\model\Product.class
-com\example\webdev2\runner\StartupReportRunner.class
-com\example\webdev2\config\ShopProperties.class
-com\example\webdev2\repository\ProductRepository.class
-com\example\webdev2\Webdev2Application.class
