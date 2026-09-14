@@ -1,4 +1,4 @@
-package com.webdev2;
+package com.corales;
 
 public class Student implements Gradable {
 
@@ -8,31 +8,32 @@ public class Student implements Gradable {
 
     public Student(String name, int age, String course) {
         this.name = name;
-        setAge(age);
         this.course = course;
+        setAge(age);
     }
 
     public String getName() {
         return name;
     }
 
-    public int getAge() {
-        return age;
-    }
-
-    public String getCourse() {
-        return course;
-    }
-
     public void setName(String name) {
         this.name = name;
     }
 
+    public int getAge() {
+        return age;
+    }
+
     public void setAge(int age) {
         if (age < 0) {
-            throw new InvalidAgeException(age);
+            throw new InvalidAgeException("Age cannot be negative: " + age);
         }
+
         this.age = age;
+    }
+
+    public String getCourse() {
+        return course;
     }
 
     public void setCourse(String course) {
@@ -42,14 +43,19 @@ public class Student implements Gradable {
     @Override
     public String computeStanding() {
         if (age >= 18) {
-            return name + " is classified as an adult learner.";
+            return "Adult Student";
         } else {
-            return name + " is classified as a minor learner.";
+            return "Minor Student";
         }
     }
 
     @Override
     public String toString() {
-        return "Student{name='" + name + "', age=" + age + ", course='" + course + "'}";
+        return "Student{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", course='" + course + '\'' +
+                ", standing='" + computeStanding() + '\'' +
+                '}';
     }
 }

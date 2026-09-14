@@ -1,4 +1,4 @@
-package com.webdev2;
+package com.corales;
 
 public interface Gradable {
 
