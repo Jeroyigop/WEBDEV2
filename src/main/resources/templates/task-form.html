@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Form</title>
+</head>
+<body>
+
+<h1 th:text="${task.id == null ? 'Add New Task' : 'Edit Task'}">
+    Add New Task
+</h1>
+
+<form th:object="${task}"
+      th:action="${task.id == null ? '/tasks' : '/tasks/edit/' + task.id}"
+      method="post">
+
+    <label>Title:</label>
+    <input type="text" th:field="*{title}">
+    <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></span>
+    <br><br>
+
+    <label>Description:</label>
+    <textarea th:field="*{description}"></textarea>
+    <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+    <br><br>
+
+    <label>Priority:</label>
+    <input type="number" th:field="*{priority}">
+    <span th:if="${#fields.hasErrors('priority')}" th:errors="*{priority}"></span>
+    <br><br>
+
+    <label>Status:</label>
+    <input type="text" th:field="*{status}">
+    <span th:if="${#fields.hasErrors('status')}" th:errors="*{status}"></span>
+    <br><br>
+
+    <button type="submit">Save Task</button>
+
+</form>
+
+<br>
+
+<a href="/tasks">Back to Task List</a>
+
+</body>
+</html>
