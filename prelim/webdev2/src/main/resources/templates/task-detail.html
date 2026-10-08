@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${task.title} + ' | Task Tracker'">Task details</title>
+</head>
+<body>
+<main>
+    <h1 th:text="${task.title}">Task title</h1>
+    <p><strong>ID:</strong> <span th:text="${task.id}">1</span></p>
+    <p><strong>Description:</strong>
+        <span th:if="${task.description != null and !#strings.isEmpty(task.description)}"
+              th:text="${task.description}">Task description</span>
+        <span th:if="${task.description == null or #strings.isEmpty(task.description)}">No description provided.</span>
+    </p>
+    <p><strong>Status:</strong>
+        <span th:if="${task.completed}">Completed</span>
+        <span th:unless="${task.completed}">Incomplete</span>
+    </p>
+    <p><a th:href="@{/tasks}">Back to tasks</a></p>
+</main>
+</body>
+</html>

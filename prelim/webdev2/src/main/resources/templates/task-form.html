@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Create a task | Task Tracker</title>
+</head>
+<body>
+<main>
+    <h1>Create a task</h1>
+    <form th:action="@{/tasks}" th:object="${task}" method="post">
+        <div>
+            <label for="title">Title</label>
+            <input id="title" type="text" th:field="*{title}" required minlength="2" maxlength="100">
+            <span th:if="${#fields.hasErrors('title')}" th:errors="*{title}" role="alert"></span>
+        </div>
+        <div>
+            <label for="description">Description</label>
+            <textarea id="description" th:field="*{description}" maxlength="500"></textarea>
+            <span th:if="${#fields.hasErrors('description')}"
+                  th:errors="*{description}" role="alert"></span>
+        </div>
+        <div>
+            <input id="completed" type="checkbox" th:field="*{completed}">
+            <label for="completed">Completed</label>
+        </div>
+        <button type="submit">Save task</button>
+    </form>
+    <p><a th:href="@{/tasks}">Cancel</a></p>
+</main>
+</body>
+</html>

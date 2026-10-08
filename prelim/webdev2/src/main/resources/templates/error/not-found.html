@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Task not found | Task Tracker</title>
+</head>
+<body>
+<main>
+    <h1>Task not found</h1>
+    <p th:text="${errorMessage}">The requested task could not be found.</p>
+    <p><a th:href="@{/tasks}">Back to tasks</a></p>
+</main>
+</body>
+</html>
