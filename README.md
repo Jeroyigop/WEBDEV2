@@ -14,10 +14,10 @@
 The application connects to a local MySQL database named `webdev2_lab7`. Create it before starting the application:
 
 ```powershell
-& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p -P 3307 -e "CREATE DATABASE webdev2_lab7;"
+mysql -u root -p -e "CREATE DATABASE webdev2_lab7;"
 ```
 
-The application connects to MySQL on port `3307`. Set `MYSQL_USER` and `MYSQL_PASSWORD` in the environment if your local MySQL credentials differ from the defaults. For example, in PowerShell:
+Set `MYSQL_USER` and `MYSQL_PASSWORD` in the environment if your local MySQL credentials differ from the defaults. For example, in PowerShell:
 
 ```powershell
 $env:MYSQL_USER = "root"
@@ -31,7 +31,6 @@ The configured `create-drop` schema strategy creates the entity tables while the
 USE webdev2_lab7;
 SHOW TABLES;
 DESCRIBE app_users;
-SHOW INDEX FROM app_users;
 SELECT id, username, email, created_at FROM app_users;
 ```
 
