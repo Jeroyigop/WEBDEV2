@@ -29,9 +29,9 @@ class Webdev2ApplicationTests {
 		String storedEmail = jdbcTemplate.queryForObject(
 				"SELECT email FROM app_users WHERE username = ?",
 				String.class,
-				"lab7_user");
+				"week7_user");
 
-		assertEquals("original@example.com", storedEmail);
+		assertEquals("week7@example.com", storedEmail);
 	}
 
 }

@@ -41,7 +41,7 @@ SHOW INDEX FROM app_users;
 SELECT username, email FROM app_users WHERE username = 'lab7_user';
 ```
 
-The startup runner creates and persists `lab7_user` with `original@example.com`, detaches it, then changes only the detached Java object's email to `changed@example.com`. It does not merge the entity, so the database value stays `original@example.com`.
+The startup runner creates and persists `week7_user` with `week7@example.com`, detaches it, then changes only the detached Java object's email to `changed@example.com`. It does not merge the entity, so the database value stays `week7@example.com`.
 
 ## Build and Test
 

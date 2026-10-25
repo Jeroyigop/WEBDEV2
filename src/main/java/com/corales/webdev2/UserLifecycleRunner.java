@@ -22,8 +22,8 @@ public class UserLifecycleRunner implements CommandLineRunner {
 
         // STATE 1: Transient
         User user = new User();
-        user.setUsername("lab7_user");
-        user.setEmail("original@example.com");
+        user.setUsername("week7_user");
+        user.setEmail("week7@example.com");
         user.setCreatedAt(LocalDateTime.now());
 
         System.out.println("\n===== JPA ENTITY LIFECYCLE =====");
@@ -46,7 +46,7 @@ public class UserLifecycleRunner implements CommandLineRunner {
 
         System.out.println("STATE 4 - Detached object modified.");
         System.out.println("Object email: " + user.getEmail());
-        System.out.println("No merge() called; database email should remain original@example.com.");
+        System.out.println("No merge() called; database email should remain week7@example.com.");
         System.out.println("================================\n");
     }
 }
