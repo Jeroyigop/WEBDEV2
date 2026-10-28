@@ -17,6 +17,8 @@ public class PetDataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         if (petRepository.count() == 0) {
             petRepository.save(new Pet("CHIP-0001", "Luna", "Cat", "Siamese"));
+            petRepository.save(new Pet("CHIP-0002", "Bingo", "Dog", "Beagle"));
+            petRepository.save(new Pet("CHIP-0003", "Luna Two", "Cat", "Persian"));
         }
     }
 }
