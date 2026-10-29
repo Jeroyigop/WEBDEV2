@@ -28,6 +28,8 @@ Set the MySQL password in the same PowerShell terminal used to start the app. Do
 ```powershell
 $env:MYSQL_USER = "root"
 $env:MYSQL_PASSWORD = "your-local-mysql-password"
+# Optional; defaults to webdev2_lab7
+$env:MYSQL_DATABASE = "webdev2_lab7"
 .\mvnw.cmd spring-boot:run
 ```
 
