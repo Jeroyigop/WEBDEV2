@@ -48,3 +48,21 @@ The startup runner creates and persists `week7_user` with `week7@example.com`, d
 ```powershell
 .\mvnw.cmd clean package
 ```
+
+## Week 9: JPA Relationships and Capstone Model
+
+The Week 9 model adds bidirectional `User`/`UserProfile` and `Department`/`Employee`
+relationships, a `Student`/`Course` many-to-many represented by the `Enrollment`
+association entity, and a Pet Shelter capstone model (`PetOwner`, `Pet`, `Tag`, and
+`PetTag`). The Pet Shelter ERD and relationship decisions are documented in
+[answers.md](answers.md).
+
+Run the Week 9 persistence checks with:
+
+```powershell
+.\mvnw.cmd -Dtest=JpaRelationshipsIntegrationTests test
+```
+
+The test uses an in-memory H2 database. Hibernate SQL logging remains enabled for
+the normal application configuration; the test also checks statement counts for
+the lazy-loading, transactional, and fetch-join reads.

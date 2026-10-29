@@ -10,6 +10,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 
 @Entity
 @Table(name = "app_users")
@@ -27,6 +30,10 @@ public class User {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "profile_id")
+    private UserProfile profile;
 
     public User() {
     }
@@ -68,5 +75,22 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public UserProfile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(UserProfile profile) {
+        if (this.profile == profile) {
+            return;
+        }
+        if (this.profile != null) {
+            this.profile.setUser(null);
+        }
+        this.profile = profile;
+        if (profile != null && profile.getUser() != this) {
+            profile.setUser(this);
+        }
     }
 }

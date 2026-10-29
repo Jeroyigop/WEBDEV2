@@ -148,3 +148,171 @@ Key files:
 - `src/main/java/com/corales/webdev2/PetService.java`
 - `src/main/java/com/corales/webdev2/PetController.java`
 - `src/test/java/com/corales/webdev2/PetIntegrationTests.java`
+
+---
+
+# Lab 9 — Capstone Milestone 2: Database Integration + JPA Entity Model
+
+## Task 1 — One-to-one and one-to-many
+
+`User` owns the one-to-one FK using `profile_id`; `UserProfile.user` is the inverse
+side. `User.setProfile()` synchronizes both references. The existing Week 7 user
+lifecycle behavior is unchanged.
+
+```java
+// User (owning side)
+@OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+@JoinColumn(name = "profile_id")
+private UserProfile profile;
+
+// UserProfile (inverse side)
+@OneToOne(mappedBy = "profile")
+private User user;
+```
+
+For departments, `Employee` owns the non-null `department_id` FK. The
+`Department.addEmployee()` and `removeEmployee()` helpers synchronize both sides.
+`Department.employees` uses `PERSIST`/`MERGE` plus `orphanRemoval` because employees
+are composition-owned by a department.
+
+```java
+// Employee (owning side)
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(name = "department_id", nullable = false)
+private Department department;
+
+// Department (inverse side)
+@OneToMany(mappedBy = "department",
+        cascade = { CascadeType.PERSIST, CascadeType.MERGE }, orphanRemoval = true)
+private List<Employee> employees = new ArrayList<>();
+```
+
+The `userOwnsProfileAndDepartmentPersistsEmployees` test saves the profile through
+the owning `User`, persists two employees through a department, then reads them
+back through `DepartmentRepository.findAll()`. Read-back assertions verify both
+employee names and their relationship to the saved department.
+
+## Task 2 — Join table and association entity
+
+The initial direct many-to-many shape for this lesson is:
+
+```java
+// Initial Student side, before adding enrollment attributes
+@ManyToMany
+@JoinTable(name = "student_course",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "course_id"))
+private Set<Course> courses = new HashSet<>();
+
+// Initial Course side
+@ManyToMany(mappedBy = "courses")
+private Set<Student> students = new HashSet<>();
+```
+
+The final model replaces the join table mapping with `Enrollment`, since a
+student-course link stores `enrollmentDate` and `grade`. `Enrollment` owns both
+foreign keys and `uk_student_course` prevents duplicate enrollment pairs.
+`Student.enrollments` owns the association lifecycle; `Course.enrollments` has no
+`REMOVE` cascade so deleting a student cannot delete a shared course.
+
+```java
+@Table(name = "enrollments",
+        uniqueConstraints = @UniqueConstraint(name = "uk_student_course",
+                columnNames = { "student_id", "course_id" }))
+class Enrollment {
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "student_id", nullable = false)
+    private Student student;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "course_id", nullable = false)
+    private Course course;
+
+    private LocalDate enrollmentDate;
+    private String grade;
+}
+```
+
+`duplicateStudentCourseEnrollmentIsRejected` verifies that the first enrollment
+succeeds, a second pair for the same student/course raises
+`DataIntegrityViolationException`, and the first row remains. The lifecycle test
+also deletes one of two enrolled students and confirms the shared course and the
+other enrollment remain.
+
+## Task 3 — Lazy loading experiment
+
+All collection relationships and `@ManyToOne` links are lazy. The deliberately
+non-transactional `EmployeeReadService.loadWithoutDepartmentFetch()` returns an
+employee whose department proxy cannot be initialized after the repository
+transaction closes. The integration test catches the actual exception and prints
+its class/message and first stack frame. The tested exception is
+`org.hibernate.LazyInitializationException`.
+
+Two fixes are implemented:
+
+```java
+@Transactional(readOnly = true)
+public String readDepartmentNameTransactionally(Long id) {
+    Employee employee = employeeRepository.findById(id).orElseThrow();
+    return employee.getDepartment().getName();
+}
+
+@Query("SELECT e FROM Employee e JOIN FETCH e.department WHERE e.id = :id")
+Optional<Employee> findWithDepartmentById(Long id);
+```
+
+`JpaRelationshipsIntegrationTests` enables Hibernate statistics and asserts
+prepared-statement counts of **1** for the lazy failure (employee select only),
+**2** for the transactional read (employee plus lazy department select), and **1**
+for the fetch join. The count message is printed by the test. Collections are not
+made globally `EAGER`: that can load unused graphs, multiply joined rows, and
+cause avoidable queries when loading lists.
+
+## Task 4 — Cascade and orphan removal
+
+`Department.employees` uses `PERSIST`, `MERGE`, and `orphanRemoval=true`; removing
+an employee from the department collection deletes that employee row. On the
+shared Student/Course path, `Course.enrollments` intentionally omits `REMOVE`.
+`Student.enrollments` cascades removal only to its owned enrollment records, not
+to the shared course itself.
+
+`orphanRemovalDeletesEmployeeAndStudentRemovalPreservesSharedCourse` verifies
+the employee row is absent after removal and flush, then deletes one student and
+asserts that the shared course and remaining enrollment still exist.
+
+## Task 5 — Pet Shelter capstone ERD and persistence smoke test
+
+No separate Milestone 1 ERD file was present, so the existing Pet CRUD capstone
+was extended as a Pet Shelter model. The ERD below records the relationships
+implemented in JPA:
+
+| Entity | Relationship | FK owner / key | Fetch and cascade decision |
+|---|---|---|---|
+| `PetOwner` | 1:N `Pet` | `Pet.owner_id` | Pet owner collection is LAZY; persist/merge pets with owner, but do not delete pets automatically when deleting an owner |
+| `Pet` | 1:N `PetTag` | `PetTag.pet_id` | LAZY collection; cascade persist/merge/remove and orphan removal because assignments belong to the pet |
+| `Tag` | 1:N `PetTag` | `PetTag.tag_id` | LAZY collection; persist/merge only because tags may be shared |
+| `Pet` ↔ `Tag` | N:M through `PetTag` | `PetTag` owns both FKs; unique `(pet_id, tag_id)` | Association entity preserves `appliedOn` and `notes`; avoid cascading removal to shared tags |
+
+```text
+PetOwner (1) ─────< (N) Pet (1) ─────< (N) PetTag (N) >───── (1) Tag
+                                  unique: (pet_id, tag_id)
+```
+
+All four entities have generated IDs and repositories
+(`PetOwnerRepository`, `PetRepository`, `TagRepository`, and `PetTagRepository`).
+The existing `Pet` CRUD fields remain intact. `PetShelterCapstoneSavesAndReadsOwnerAndAttributedPetTagGraph`
+persists an owner and pet, assigns a shared tag with a date and notes, then reads
+the owner/pet and association back through repositories and fetch queries.
+
+## Week 9 verification
+
+Command:
+
+```powershell
+.\mvnw.cmd -Dtest=JpaRelationshipsIntegrationTests test
+```
+
+Result: **6 tests run, 0 failures, 0 errors, 0 skipped**. The suite covers both
+relationship helpers, cascading department persistence, both lazy-loading fixes,
+duplicate enrollment rejection, orphan deletion, shared-course preservation, and
+the Pet Shelter persistence smoke test.
