@@ -1,6 +1,6 @@
 # Pet REST API
 
-Base URL: `http://localhost:8080`  
+Base URL: `http://localhost:8080`
 Resource: `/api/pets`
 
 The API uses JSON. Pet responses expose `id`, `microchipNumber`, `name`, `species`, and `breed`; JPA entities are not returned directly. Error responses use this shape:
