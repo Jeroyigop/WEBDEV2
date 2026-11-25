@@ -63,6 +63,7 @@ Examples:
 - [API.md](./API.md) documents the CRUD endpoints, query parameters, request fields, response codes, examples, validation errors, and CORS.
 - [api_tests.json](./api_tests.json) is the Postman v2.1 collection **Week11 - WEBDEV2 Pet API**. It covers create, paginated list, species filtering, read, replace, patch, duplicate conflict, validation failure, not found, and delete.
 - The collection generates a fresh microchip value for each run and stores the created pet ID for subsequent requests. Import it into Postman and run the collection against the app at `http://localhost:8080`.
+- [Integration-test report screenshot](./screenshots/week11_integration_test_report.png) records the verified Maven/Spring Boot integration-test run. It is not a screenshot of the Postman collection runner.
 
 ## Verification
 
