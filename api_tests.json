@@ -1,0 +1,247 @@
+{
+  "info": {
+    "_postman_id": "80bd0e12-d725-4575-91c3-2b47fee17f82",
+    "name": "Week11 - WEBDEV2 Pet API",
+    "description": "Week 11 validation, error handling, CORS, pagination, filtering, and CRUD checks.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create pet",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('microchipNumber', 'CHIP-W11-' + Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Created with 201', function () { pm.response.to.have.status(201); });",
+              "pm.test('Location header is present', function () { pm.response.to.have.header('Location'); });",
+              "const pet = pm.response.json();",
+              "pm.collectionVariables.set('petId', pet.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"microchipNumber\": \"{{microchipNumber}}\",\n  \"name\": \"Clover\",\n  \"species\": \"Rabbit\",\n  \"breed\": \"Holland Lop\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/pets"
+      }
+    },
+    {
+      "name": "List pets - paginated and sorted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Page returned', function () { pm.response.to.have.status(200); const body = pm.response.json(); pm.expect(body).to.have.property('totalElements'); pm.expect(body).to.have.property('totalPages'); pm.expect(body.content).to.be.an('array'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pets?page=0&size=5&sort=name%2Casc"
+      }
+    },
+    {
+      "name": "Filter pets by species",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Filtered page contains only rabbits', function () { pm.response.to.have.status(200); pm.response.json().content.forEach(function (pet) { pm.expect(pet.species.toLowerCase()).to.eql('rabbit'); }); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pets?species=Rabbit"
+      }
+    },
+    {
+      "name": "Get created pet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Pet is returned', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().id).to.eql(Number(pm.collectionVariables.get('petId'))); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pets/{{petId}}"
+      }
+    },
+    {
+      "name": "Replace pet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Pet replaced', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().name).to.eql('Clover Updated'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"microchipNumber\": \"{{microchipNumber}}\",\n  \"name\": \"Clover Updated\",\n  \"species\": \"Rabbit\",\n  \"breed\": \"Mini Lop\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/pets/{{petId}}"
+      }
+    },
+    {
+      "name": "Patch pet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Only name changed', function () { pm.response.to.have.status(200); const pet = pm.response.json(); pm.expect(pet.name).to.eql('Clover Patched'); pm.expect(pet.species).to.eql('Rabbit'); pm.expect(pet.breed).to.eql('Mini Lop'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Clover Patched\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/pets/{{petId}}"
+      }
+    },
+    {
+      "name": "Duplicate microchip - conflict",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Duplicate returns structured 409', function () { pm.response.to.have.status(409); const body = pm.response.json(); pm.expect(body.status).to.eql(409); pm.expect(body).to.have.property('timestamp'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"microchipNumber\": \"{{microchipNumber}}\",\n  \"name\": \"Duplicate\",\n  \"species\": \"Rabbit\",\n  \"breed\": \"Unknown\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/pets"
+      }
+    },
+    {
+      "name": "Invalid create - field validation",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Validation returns field errors', function () { pm.response.to.have.status(400); const body = pm.response.json(); pm.expect(body.status).to.eql(400); pm.expect(body.errors).to.be.an('array'); pm.expect(body.errors.some(function (error) { return error.field === 'name'; })).to.eql(true); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"microchipNumber\": \"CHIP-W11-INVALID\",\n  \"name\": \"\",\n  \"species\": \"Rabbit\",\n  \"breed\": \"Holland Lop\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/api/pets"
+      }
+    },
+    {
+      "name": "Missing pet - not found",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Missing ID returns 404 error response', function () { pm.response.to.have.status(404); const body = pm.response.json(); pm.expect(body.status).to.eql(404); pm.expect(body).to.have.property('timestamp'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/pets/0"
+      }
+    },
+    {
+      "name": "Delete pet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Pet deleted with 204', function () { pm.response.to.have.status(204); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/pets/{{petId}}"
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "petId", "value": "" },
+    { "key": "microchipNumber", "value": "" }
+  ]
+}

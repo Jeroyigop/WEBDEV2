@@ -1,9 +1,8 @@
 package com.corales.webdev2;
 
 import java.net.URI;
-import java.util.List;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -29,15 +29,18 @@ public class PetController {
     }
 
     @GetMapping
-    public List<PetResponse> findAll() {
-        return petService.findAll();
+    public Page<PetResponse> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sort,
+            @RequestParam(defaultValue = "asc") String direction,
+            @RequestParam(required = false) String species) {
+        return petService.findAll(page, size, sort, direction, species);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PetResponse> findById(@PathVariable Long id) {
-        return petService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(petService.findById(id));
     }
 
     @PostMapping
@@ -52,25 +55,19 @@ public class PetController {
 
     @PutMapping("/{id}")
     public ResponseEntity<PetResponse> replace(@PathVariable Long id,
-            @RequestBody UpdatePetRequest request) {
-        return petService.replace(id, request)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+            @Valid @RequestBody UpdatePetRequest request) {
+        return ResponseEntity.ok(petService.replace(id, request));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<PetResponse> patch(@PathVariable Long id,
-            @RequestBody UpdatePetRequest request) {
-        return petService.patch(id, request)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+            @Valid @RequestBody UpdatePetRequest request) {
+        return ResponseEntity.ok(petService.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!petService.delete(id)) {
-            return ResponseEntity.notFound().build();
-        }
+        petService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

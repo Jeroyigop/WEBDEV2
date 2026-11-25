@@ -1,73 +1,79 @@
-# Lab 10: Capstone Milestone 3 — RESTful CRUD API
+# Lab 11 — Capstone Milestone 3: Complete Core REST API
 
-**Course:** WEBDEV2
-**Week:** 10
-**Primary capstone resource:** `Pet`
-**Lecture assessment:** LA 10: RESTful API Development Quiz
-**Estimated duration:** 3 hours
+**Course:** Web Development 2
+**Week:** 11
+**Primary resource:** Pet
+**Branch:** `week11`, created from the cleaned `week10` capstone branch
 
-## Task 1 — URL design
+## Task 1 — Request validation
 
-Base URL: `/api/pets`
+`CreatePetRequest` validates all required values with meaningful `@NotBlank` messages and limits each string using `@Size`. `UpdatePetRequest` applies length limits to optional fields. `@Valid` is applied to POST, PUT, and PATCH request bodies.
 
-| Method | Path | Purpose | Success response | Other outcomes |
-|---|---|---|---|---|
-| GET | `/api/pets` | List pets | `200 OK`, JSON array (including `[]` when empty) | — |
-| GET | `/api/pets/{id}` | Read one pet | `200 OK`, `PetResponse` | `404 Not Found` |
-| POST | `/api/pets` | Create a pet | `201 Created`, `Location: /api/pets/{id}`, `PetResponse` | `400 Bad Request`, `409 Conflict` |
-| PUT | `/api/pets/{id}` | Replace all editable fields | `200 OK`, updated `PetResponse` | `400 Bad Request`, `404 Not Found`, `409 Conflict` |
-| PATCH | `/api/pets/{id}` | Update supplied fields only | `200 OK`, updated `PetResponse` | `400 Bad Request`, `404 Not Found`, `409 Conflict` |
-| DELETE | `/api/pets/{id}` | Delete one pet | `204 No Content` | `404 Not Found` |
-
-`PetController` implements all six method/URL combinations. It returns DTOs only; no JPA entity is accepted or returned by a controller method.
-
-## Tasks 2–5 — DTOs and behavior
-
-The API uses these request/response DTOs:
-
-- `CreatePetRequest`
-- `UpdatePetRequest`
-- `PetResponse`
-- `ApiError`
-
-`PetResponse` contains only `id`, `microchipNumber`, `name`, `species`, and `breed`. `PetService` maps JPA entities to `PetResponse` before returning data to the controller.
-
-- GET-all returns `200` with an empty JSON array when there are no pets.
-- GET-by-ID and all update/delete operations return `404` for an unknown ID.
-- POST validates required fields and returns `201` with a `Location` header.
-- PUT requires and replaces all four editable fields.
-- PATCH updates only non-null fields; blank supplied text is rejected with `400`.
-- A duplicate microchip number returns `409 Conflict` with an `ApiError` response.
-- DELETE returns `204`; repeating the same DELETE returns `404`.
-
-## Verification evidence
-
-Run the integration tests from the repository root:
-
-```powershell
-.\mvnw.cmd test
-```
-
-`PetRestApiIntegrationTests.completeCrudWorkflowReturnsExpectedStatusesAndLocation` exercises create (`201` + `Location`), list and read (`200`), replace (`200`), partial update (`200` while preserving other fields), delete (`204`), repeat delete (`404`), and read-after-delete (`404`). `duplicateMicrochipReturnsConflictAndInvalidCreateReturnsBadRequest` verifies the `409` duplicate-microchip response and a `400` invalid-create response. Both tests use an isolated in-memory H2 database.
-
-Example duplicate request:
+Invalid POST example:
 
 ```http
 POST /api/pets
 Content-Type: application/json
 
-{"microchipNumber":"CHIP-W10-DUP","name":"Milo","species":"Cat","breed":"Domestic"}
+{"microchipNumber":"CHIP-W11-INVALID","name":"","species":"Rabbit","breed":"Holland Lop"}
 ```
 
-When that microchip number already exists, the API responds:
+Response: `400 Bad Request`
 
-```http
-HTTP/1.1 409 Conflict
-Content-Type: application/json
-
-{"message":"A pet with that microchip number already exists."}
+```json
+{
+  "status": 400,
+  "message": "Request validation failed.",
+  "timestamp": "2026-11-25T02:00:00Z",
+  "errors": [
+    {"field":"name","message":"Pet name is required."}
+  ]
+}
 ```
+
+## Task 2 — Global exception handling
+
+`GlobalExceptionHandler` handles Bean Validation failures, `ResourceNotFoundException`, conflicts, malformed bodies, invalid request parameters, and unexpected exceptions. All responses share the `ErrorResponse` fields `status`, `message`, `timestamp`, and nullable `errors`. Field-level validation details use `ApiFieldError`.
+
+Example not-found request: `GET /api/pets/0`
+Expected response: `404` and an `ErrorResponse` with `status: 404`.
+
+## Task 3 — CORS
+
+`WebConfig` enables CORS for `/api/**` from `http://localhost:3000`, allows standard API methods including OPTIONS, allows all headers, and permits credentials. `PetRestApiIntegrationTests.corsAllowsConfiguredFrontendOrigin` verifies the preflight response includes `Access-Control-Allow-Origin` and credentials headers.
+
+Manual check:
+
+```powershell
+curl.exe -i -X OPTIONS http://localhost:8080/api/pets -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST"
+```
+
+## Task 4 — Pagination and filtering
+
+`GET /api/pets` returns a Spring `Page<PetResponse>`. Query parameters are `page` (default `0`), `size` (default `20`, maximum `100`), `sort` (default `id`), `direction` (default `asc`), and optional `species`. Sorting accepts `name,asc` or a field plus the separate `direction` parameter. Supported sort fields are `id`, `microchipNumber`, `name`, `species`, and `breed`.
+
+Examples:
+
+- `GET /api/pets?page=0&size=5&sort=name,asc`
+- `GET /api/pets?species=Rabbit`
+- `GET /api/pets?size=999` returns page metadata with `size: 100`.
+
+## Task 5 — Endpoint documentation and runnable collection
+
+- [API.md](./API.md) documents the CRUD endpoints, query parameters, request fields, response codes, examples, validation errors, and CORS.
+- [api_tests.json](./api_tests.json) is the Postman v2.1 collection **Week11 - WEBDEV2 Pet API**. It covers create, paginated list, species filtering, read, replace, patch, duplicate conflict, validation failure, not found, and delete.
+- The collection generates a fresh microchip value for each run and stores the created pet ID for subsequent requests. Import it into Postman and run the collection against the app at `http://localhost:8080`.
+
+## Verification
+
+Run all project integration tests:
+
+```powershell
+.\mvnw.cmd test
+```
+
+`PetRestApiIntegrationTests` covers the Week 10 CRUD workflow plus field-level validation, consistent not-found/conflict error bodies, pagination and metadata, species filtering, the 100-item cap, invalid page handling, and CORS preflight.
 
 ## Submission
 
-This Week 10 project and its required Spring Boot configuration are on the `week10` branch. Push the branch with `git push -u origin week10`; submit the repository URL in Moodle as instructed.
+Week 11 files are at the repository root on the `week11` branch. Push with `git push -u origin week11`, then submit the repository URL in Moodle.

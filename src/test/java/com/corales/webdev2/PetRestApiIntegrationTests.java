@@ -1,13 +1,16 @@
 package com.corales.webdev2;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,7 +49,9 @@ class PetRestApiIntegrationTests {
     void completeCrudWorkflowReturnsExpectedStatusesAndLocation() throws Exception {
         mockMvc.perform(get("/api/pets"))
                 .andExpect(status().isOk())
-                .andExpect(content().json("[]"));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.totalElements").value(0));
 
         MvcResult created = mockMvc.perform(post("/api/pets")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -63,7 +68,7 @@ class PetRestApiIntegrationTests {
         String id = location.substring(location.lastIndexOf('/') + 1);
         mockMvc.perform(get("/api/pets"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].microchipNumber").value("CHIP-W10-001"));
+                .andExpect(jsonPath("$.content[0].microchipNumber").value("CHIP-W10-001"));
         mockMvc.perform(get("/api/pets/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Clover"));
@@ -90,6 +95,12 @@ class PetRestApiIntegrationTests {
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/pets/{id}", id))
                 .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/pets/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value(containsString("not found")))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.errors").value(nullValue()));
     }
 
     @Test
@@ -101,12 +112,65 @@ class PetRestApiIntegrationTests {
                 .andExpect(status().isCreated());
         mockMvc.perform(post("/api/pets").contentType(MediaType.APPLICATION_JSON).content(request))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value(containsString("microchip")));
+                .andExpect(jsonPath("$.message").value(containsString("microchip")))
+                .andExpect(jsonPath("$.status").value(409));
         mockMvc.perform(post("/api/pets")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"microchipNumber":"","name":"Milo","species":"Cat","breed":"Domestic"}
                         """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors[0].field").value("microchipNumber"))
+                .andExpect(jsonPath("$.errors[0].message").value(containsString("required")));
+    }
+
+    @Test
+    void listSupportsPaginationFilteringAndCapsPageSize() throws Exception {
+        petRepository.saveAll(java.util.List.of(
+                new Pet("CHIP-W11-001", "Clover", "Rabbit", "Holland Lop"),
+                new Pet("CHIP-W11-002", "Milo", "Cat", "Domestic"),
+                new Pet("CHIP-W11-003", "Poppy", "Rabbit", "Lionhead"),
+                new Pet("CHIP-W11-004", "Daisy", "Dog", "Beagle"),
+                new Pet("CHIP-W11-005", "Ollie", "Cat", "Tabby"),
+                new Pet("CHIP-W11-006", "Luna", "Rabbit", "Mini Rex"),
+                new Pet("CHIP-W11-007", "Scout", "Dog", "Collie")));
+
+        mockMvc.perform(get("/api/pets?page=0&size=2&sort=name,asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].name").value("Clover"))
+                .andExpect(jsonPath("$.totalElements").value(7))
+                .andExpect(jsonPath("$.totalPages").value(4))
+                .andExpect(jsonPath("$.size").value(2));
+
+        mockMvc.perform(get("/api/pets?species=Rabbit"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.content[0].species").value("Rabbit"));
+
+        mockMvc.perform(get("/api/pets?size=999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(100))
+                .andExpect(jsonPath("$.totalElements").value(7));
+    }
+
+    @Test
+    void corsAllowsConfiguredFrontendOrigin() throws Exception {
+        mockMvc.perform(options("/api/pets")
+                .header("Origin", "http://localhost:3000")
+                .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+                .andExpect(header().string("Access-Control-Allow-Credentials", "true"))
+                .andExpect(header().string("Access-Control-Allow-Methods", containsString("POST")));
+    }
+
+    @Test
+    void invalidPaginationReturnsFieldLevelBadRequest() throws Exception {
+        mockMvc.perform(get("/api/pets?page=-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors[0].field").value("page"));
     }
 }
