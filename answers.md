@@ -2,7 +2,7 @@
 
 **Course:** WEBDEV2
 **Week:** 10
-**Primary capstone resource:** `Pet` (the Week 9 pet-shelter JPA entity)
+**Primary capstone resource:** `Pet`
 **Lecture assessment:** LA 10: RESTful API Development Quiz
 **Estimated duration:** 3 hours
 
@@ -30,7 +30,7 @@ The API uses these request/response DTOs:
 - `PetResponse`
 - `ApiError`
 
-`PetResponse` contains only `id`, `microchipNumber`, `name`, `species`, and `breed`. It does not expose the pet's owner or tag relationships. `PetService` maps JPA entities to `PetResponse` before returning data to the controller.
+`PetResponse` contains only `id`, `microchipNumber`, `name`, `species`, and `breed`. `PetService` maps JPA entities to `PetResponse` before returning data to the controller.
 
 - GET-all returns `200` with an empty JSON array when there are no pets.
 - GET-by-ID and all update/delete operations return `404` for an unknown ID.
@@ -70,4 +70,4 @@ Content-Type: application/json
 
 ## Submission
 
-This Week 10 work is on the `week10` branch, based on `week9`. Push the branch with `git push -u origin week10`; submit the repository URL in Moodle as instructed.
+This Week 10 project and its required Spring Boot configuration are on the `week10` branch. Push the branch with `git push -u origin week10`; submit the repository URL in Moodle as instructed.
